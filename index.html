@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AirWise AI — Smart Urban Air Quality & Health Assistant</title>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --card: #1e293b;
+      --accent: #38bdf8;
+      --text: #f8fafc;
+      --muted: #94a3b8;
+      --good: #22c55e;
+      --warn: #f59e0b;
+      --danger: #ef4444;
+    }
+    * { box-sizing: border-box; font-family: system-ui, -apple-system, sans-serif; }
+    body { margin: 0; background: var(--bg); color: var(--text); padding: 16px; line-height: 1.5; }
+    .container { max-width: 760px; margin: 0 auto; }
+    header { text-align: center; margin-bottom: 20px; }
+    header h1 { margin: 0 0 6px; font-size: 1.6rem; color: var(--accent); }
+    header p { margin: 0; color: var(--muted); font-size: 0.95rem; }
+    .card { background: var(--card); border-radius: 12px; padding: 16px; margin-bottom: 16px; border: 1px solid #334155; }
+    label { display: block; font-weight: 600; margin-bottom: 6px; font-size: 0.9rem; }
+    input, select, button { width: 100%; padding: 11px; border-radius: 8px; border: 1px solid #475569; background: #0f172a; color: var(--text); font-size: 0.95rem; margin-bottom: 12px; }
+    input:focus, select:focus, button:focus { outline: 2px solid var(--accent); }
+    button { background: var(--accent); color: #0f172a; font-weight: 700; border: none; cursor: pointer; }
+    button:disabled { opacity: 0.6; cursor: not-allowed; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; margin-top: 10px; }
+    .metric { background: #0f172a; padding: 12px; border-radius: 8px; text-align: center; border: 1px solid #334155; }
+    .metric span { display: block; font-size: 0.8rem; color: var(--muted); }
+    .metric strong { font-size: 1.25rem; color: var(--accent); }
+    .ai-box { background: #0f172a; border-left: 4px solid var(--accent); padding: 14px; border-radius: 8px; white-space: pre-wrap; font-size: 0.95rem; }
+    .badge { display: inline-block; padding: 4px 10px; border-radius: 999px; font-size: 0.8rem; font-weight: 700; margin-bottom: 8px; }
+    .row { display: flex; gap: 8px; }
+    .row input { margin-bottom: 0; }
+    .row button { width: auto; white-space: nowrap; margin-bottom: 0; }
+    .note { font-size: 0.8rem; color: var(--muted); margin-top: -6px; margin-bottom: 12px; }
+  </style>
+</head>
+<body>
+  <main class="container">
+    <header>
+      <h1>AirWise AI</h1>
+      <p>Context-Aware Urban Air Quality & Health Decision Assistant</p>
+    </header>
+
+    <section class="card" aria-labelledby="setup-heading">
+      <h2 id="setup-heading" style="margin-top:0;font-size:1.1rem;">1. City & User Context</h2>
+      
+      <label for="apiKeyInput">Gemini API Key (Stored locally in session only)</label>
+      <input type="password" id="apiKeyInput" placeholder="Paste your Google AI Studio API key..." autocomplete="off" />
+      <p class="note">Security: Key stays in your browser session and is never hardcoded in source code.</p>
+
+      <label for="cityInput">Target City</label>
+      <input type="text" id="cityInput" value="Chandigarh" placeholder="Enter city name (e.g., Delhi, Mumbai, Chandigarh)" />
+
+      <label for="activitySelect">Planned Activity</label>
+      <select id="activitySelect">
+        <option value="Outdoor Jogging / Intense Exercise">Outdoor Jogging / Intense Exercise</option>
+        <option value="Daily Commute / Walking">Daily Commute / Walking</option>
+        <option value="Indoor Work / Home Ventilation">Indoor Work / Home Ventilation</option>
+        <option value="Outdoor Event with Family">Outdoor Event with Family</option>
+      </select>
+
+      <label for="healthSelect">Health Sensitivity Profile</label>
+      <select id="healthSelect">
+        <option value="Healthy Adult">Healthy Adult</option>
+        <option value="Asthma / Respiratory Sensitivity">Asthma / Respiratory Sensitivity</option>
+        <option value="Elderly (65+) or Young Child">Elderly (65+) or Young Child</option>
+        <option value="Heart / Cardiovascular Condition">Heart / Cardiovascular Condition</option>
+      </select>
+
+      <button id="analyzeBtn" type="button">Analyze Air Quality & Get AI Decision</button>
+    </section>
+
+    <section class="card" id="resultsSection" hidden aria-live="polite">
+      <h2 style="margin-top:0;font-size:1.1rem;">2. Live Urban Air Telemetry</h2>
+      <div id="locationTitle" style="font-weight:600;color:var(--muted);margin-bottom:8px;"></div>
+      <div id="aqiBadge" class="badge"></div>
+      <div class="grid">
+        <div class="metric"><span>US AQI</span><strong id="usAqi">--</strong></div>
+        <div class="metric"><span>PM2.5 (µg/m³)</span><strong id="pm25">--</strong></div>
+        <div class="metric"><span>PM10 (µg/m³)</span><strong id="pm10">--</strong></div>
+        <div class="metric"><span>Ozone O₃ (µg/m³)</span><strong id="ozone">--</strong></div>
+      </div>
+
+      <h3 style="margin-bottom:8px;font-size:1.05rem;">3. Smart Context-Aware AI Decision</h3>
+      <div id="aiDecisionBox" class="ai-box">Waiting for analysis...</div>
+
+      <h3 style="margin-bottom:8px;font-size:1.05rem;">4. Ask Follow-Up Assistant</h3>
+      <div class="row">
+        <input type="text" id="chatInput" placeholder="e.g., Should I wear an N95 mask or open windows?" aria-label="Follow-up question" />
+        <button id="askBtn" type="button">Ask</button>
+      </div>
+      <div id="chatReplyBox" class="ai-box" style="margin-top:10px;" hidden></div>
+    </section>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>
