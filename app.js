@@ -70,6 +70,30 @@ function buildFallbackDecision(cityLabel, aqiData, context) {
   ].join("\n");
 }
 
+function buildFollowUpFallback(question, cityLabel, aqiData, context) {
+  const q = question.toLowerCase();
+  const category = classifyAqi(aqiData.usAqi).label;
+  const highPollution = aqiData.usAqi > 100 || aqiData.pm25 > 35 || aqiData.ozone > 100;
+
+  let specificTip = `Current air status in ${cityLabel} is ${category} (US AQI ${aqiData.usAqi}, PM2.5 ${aqiData.pm25} µg/m³, O₃ ${aqiData.ozone} µg/m³) for ${context.activity} (${context.health}).`;
+
+  if (q.includes("mask") || q.includes("n95")) {
+    specificTip = highPollution
+      ? `Yes — wear a snug N95 or FFP2 mask outdoors in ${cityLabel} because AQI is ${aqiData.usAqi} (${category}) and O₃ is ${aqiData.ozone} µg/m³.`
+      : `For ${category} air in ${cityLabel} (AQI ${aqiData.usAqi}), a mask is optional for short trips unless you feel irritation.`;
+  } else if (q.includes("window") || q.includes("indoor") || q.includes("ventilat")) {
+    specificTip = highPollution
+      ? `Keep windows closed during peak pollution in ${cityLabel} (AQI ${aqiData.usAqi}, PM2.5 ${aqiData.pm25} µg/m³) and prefer indoor activity or clean air circulation.`
+      : `Brief natural ventilation can be fine when AQI is low, but re-check PM2.5 (${aqiData.pm25} µg/m³) and traffic levels.`;
+  } else if (q.includes("run") || q.includes("jog") || q.includes("walk") || q.includes("exercise")) {
+    specificTip = highPollution
+      ? `Avoid intense outdoor workouts like ${context.activity} in ${cityLabel} right now (AQI ${aqiData.usAqi}); switch to indoor exercise or lower-exertion timing.`
+      : `Light-to-moderate ${context.activity} in ${cityLabel} is reasonable at AQI ${aqiData.usAqi}, while pacing yourself for ${context.health}.`;
+  }
+
+  return `${specificTip}\n(Tip: Add a Gemini API key above for open-ended AI answers.)`;
+}
+
 async function fetchCityCoordinates(cityName) {
   const cleaned = String(cityName || "").trim();
   if (!cleaned) {
@@ -214,9 +238,10 @@ async function handleFollowUp() {
     const answer = await callGemini(apiKey, followUpPrompt);
     replyBox.textContent =
       answer ||
-      "Add your Gemini API key above for custom conversational answers, or rely on the context decision shown above.";
+      buildFollowUpFallback(question, state.cityLabel, state.aqiData, state.context);
   } catch (err) {
-    replyBox.textContent = `Could not reach Gemini API: ${err.message}`;
+    replyBox.textContent =
+      `${buildFollowUpFallback(question, state.cityLabel, state.aqiData, state.context)}\n(Note: ${err.message})`;
   }
 }
 
@@ -228,5 +253,10 @@ if (typeof document !== "undefined") {
 }
 
 if (typeof module !== "undefined" && module.exports) {
-  module.exports = { classifyAqi, buildContextPrompt, buildFallbackDecision };
+  module.exports = {
+    classifyAqi,
+    buildContextPrompt,
+    buildFallbackDecision,
+    buildFollowUpFallback
+  };
 }
